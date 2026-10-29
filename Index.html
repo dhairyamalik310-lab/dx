@@ -1,0 +1,252 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Location Lab | NSUT Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #101827;
+      color: #f3f6ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(ellipse at top, #1e3658, transparent 60%),
+        #101827;
+    }
+
+    main {
+      width: 100%;
+      max-width: 520px;
+      padding: 28px;
+      border: 1px solid #34445e;
+      border-radius: 22px;
+      background: #172235;
+      box-shadow: 0 20px 70px #0004;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 20px;
+      background: #253d57;
+      color: #a9d7ff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    h1 { margin-bottom: 8px; font-size: 29px; }
+    p { line-height: 1.6; color: #bdc9dc; }
+
+    button, .button {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 14px;
+      border: 0;
+      border-radius: 12px;
+      font: inherit;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    #locate { background: #79baff; color: #102038; }
+    #maps { background: #293a52; color: white; }
+    button:disabled { opacity: .55; cursor: wait; }
+
+    .panel {
+      margin-top: 20px;
+      padding: 17px;
+      border: 1px solid #34445e;
+      border-radius: 14px;
+      background: #101a2a;
+    }
+
+    .status { font-size: 14px; color: #b7c8df; }
+    .status.error { color: #ffb3b3; }
+    .status.success { color: #9ce8bd; }
+
+    .metric { margin-top: 18px; }
+    .metric label {
+      display: block;
+      margin-bottom: 5px;
+      color: #9eafc8;
+      font-size: 13px;
+    }
+
+    .value {
+      overflow-wrap: anywhere;
+      font-size: 17px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hidden { display: none; }
+
+    .note {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #9eafc8;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <span class="tag">NSUT • LOCATION LAB</span>
+  <h1>GPS Location Demo</h1>
+  <p>
+    Test your device's browser geolocation. Your browser
+    will ask for permission before requesting your position.
+  </p>
+
+  <button id="locate">Request my location</button>
+
+  <section class="panel" aria-live="polite">
+    <div id="status" class="status">
+      Ready. Your location has not been requested.
+    </div>
+
+    <div id="results" class="hidden">
+      <div class="metric">
+        <label>Latitude</label>
+        <div class="value" id="lat">—</div>
+      </div>
+
+      <div class="metric">
+        <label>Longitude</label>
+        <div class="value" id="lon">—</div>
+      </div>
+
+      <div class="metric">
+        <label>Reported accuracy</label>
+        <div class="value" id="accuracy">—</div>
+      </div>
+
+      <div class="metric">
+        <label>Position received at</label>
+        <div class="value" id="time">—</div>
+      </div>
+
+      <a id="maps" class="button hidden"
+         target="_blank" rel="noopener noreferrer">
+        Open my position in Google Maps
+      </a>
+    </div>
+  </section>
+
+  <p class="note">
+    Privacy: This demo contains no location-upload or database
+    code. Coordinates are displayed in this browser session.
+    Only request your own location or that of a consenting
+    participant. Browser permission can be revoked in settings.
+  </p>
+</main>
+
+<script>
+  const locate = document.getElementById("locate");
+  const statusBox = document.getElementById("status");
+  const results = document.getElementById("results");
+  const maps = document.getElementById("maps");
+
+  function setStatus(message, type = "") {
+    statusBox.textContent = message;
+    statusBox.className = "status " + type;
+  }
+
+  locate.addEventListener("click", () => {
+    results.classList.add("hidden");
+    maps.classList.add("hidden");
+
+    if (!window.isSecureContext) {
+      setStatus(
+        "Secure HTTPS is required. Open the published GitHub Pages URL.",
+        "error"
+      );
+      return;
+    }
+
+    if (!("geolocation" in navigator)) {
+      setStatus(
+        "This browser does not support geolocation.",
+        "error"
+      );
+      return;
+    }
+
+    locate.disabled = true;
+    locate.textContent = "Requesting location…";
+    setStatus(
+      "Waiting for browser permission and a location fix…"
+    );
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+
+        document.getElementById("lat").textContent =
+          latitude.toFixed(6);
+
+        document.getElementById("lon").textContent =
+          longitude.toFixed(6);
+
+        document.getElementById("accuracy").textContent =
+          "±" + Math.round(accuracy) + " metres";
+
+        document.getElementById("time").textContent =
+          new Date(position.timestamp).toLocaleString();
+
+        maps.href =
+          "https://www.google.com/maps?q=" +
+          latitude + "," + longitude;
+
+        results.classList.remove("hidden");
+        maps.classList.remove("hidden");
+
+        setStatus(
+          "Location received. Accuracy is an estimate, not a guarantee.",
+          "success"
+        );
+
+        locate.disabled = false;
+        locate.textContent = "Refresh my location";
+      },
+      (error) => {
+        const messages = {
+          1: "Permission denied. Allow location access in browser settings.",
+          2: "Position unavailable. Check location services and GPS reception.",
+          3: "Request timed out. Try again in an area with better reception."
+        };
+
+        setStatus(
+          messages[error.code] || "Unable to retrieve location.",
+          "error"
+        );
+
+        locate.disabled = false;
+        locate.textContent = "Try again";
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 0
+      }
+    );
+  });
+</script>
+</body>
+</html>
